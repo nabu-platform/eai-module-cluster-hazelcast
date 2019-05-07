@@ -4,15 +4,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.client.config.ClientAwsConfig;
-import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
-import com.hazelcast.core.MemberAttributeEvent;
-import com.hazelcast.core.MembershipEvent;
-import com.hazelcast.core.MembershipListener;
-
 import be.nabu.eai.repository.api.Repository;
 import be.nabu.eai.repository.api.cluster.Cluster;
 import be.nabu.eai.repository.api.cluster.ClusterMember;
@@ -20,6 +11,14 @@ import be.nabu.eai.repository.api.cluster.ClusterMemberSubscriber;
 import be.nabu.eai.repository.api.cluster.ClusterMemberSubscription;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
 import be.nabu.libs.resources.api.ResourceContainer;
+
+import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.Member;
+import com.hazelcast.core.MemberAttributeEvent;
+import com.hazelcast.core.MembershipEvent;
+import com.hazelcast.core.MembershipListener;
 
 public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration> implements Cluster {
 
@@ -58,11 +57,21 @@ public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration
 			synchronized(this) {
 				if (client == null) {
 					ClientConfig config = new ClientConfig();
-					ClientAwsConfig awsConfig = config.getNetworkConfig().getAwsConfig();
-					awsConfig.setEnabled(true);
-					awsConfig.setTagKey(getConfig().getAmazonTagKey());
-					awsConfig.setTagValue(getConfig().getAmazonTagValue());
-					awsConfig.setRegion(getConfig().getAmazonRegion());
+					// 3.10.2
+//					ClientAwsConfig awsConfig = new ClientAwsConfig();
+//					awsConfig.setEnabled(true);
+//					awsConfig.setTagKey(getConfig().getAmazonTagKey());
+//					awsConfig.setTagValue(getConfig().getAmazonTagValue());
+//					awsConfig.setRegion(getConfig().getAmazonRegion());
+//					config.getNetworkConfig().setAwsConfig(awsConfig);
+					// newer
+					// example: https://github.com/hazelcast/hazelcast-aws
+					config.getNetworkConfig().getAwsConfig()
+						.setEnabled(true)
+						.setProperty("region", getConfig().getAmazonRegion())
+						.setProperty("tag-key", getConfig().getAmazonTagKey())
+						.setProperty("tag-value", getConfig().getAmazonTagValue())
+						.setProperty("hz-port", getConfig().getHazelcastPort() == null ? "5701" : getConfig().getHazelcastPort());
 					client = HazelcastClient.newHazelcastClient(config);
 				}
 			}

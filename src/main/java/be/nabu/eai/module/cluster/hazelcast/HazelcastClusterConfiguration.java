@@ -1,9 +1,12 @@
 package be.nabu.eai.module.cluster.hazelcast;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
 import be.nabu.eai.api.EnvironmentSpecific;
 
+@XmlRootElement(name = "hazelcast")
 public class HazelcastClusterConfiguration {
-	private String amazonTagKey, amazonTagValue, amazonRegion;
+	private String amazonTagKey, amazonTagValue, amazonRegion, hazelcastPort;
 	private Integer port;
 
 	@EnvironmentSpecific	
@@ -35,5 +38,15 @@ public class HazelcastClusterConfiguration {
 	public void setPort(Integer port) {
 		this.port = port;
 	}
+	
+	// the hazelcast clustering port
+	@EnvironmentSpecific
+	public String getHazelcastPort() {
+		return hazelcastPort;
+	}
+	public void setHazelcastPort(String hazelcastPort) {
+		this.hazelcastPort = hazelcastPort;
+	}
+
 	
 }
