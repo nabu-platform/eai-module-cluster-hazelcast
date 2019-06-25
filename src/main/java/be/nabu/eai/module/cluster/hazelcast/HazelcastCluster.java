@@ -4,8 +4,11 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import be.nabu.eai.repository.api.Repository;
-import be.nabu.eai.repository.api.cluster.Cluster;
+import be.nabu.eai.repository.api.cluster.ClusterArtifact;
 import be.nabu.eai.repository.api.cluster.ClusterMember;
 import be.nabu.eai.repository.api.cluster.ClusterMemberSubscriber;
 import be.nabu.eai.repository.api.cluster.ClusterMemberSubscription;
@@ -20,8 +23,10 @@ import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 
-public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration> implements Cluster {
+public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration> implements ClusterArtifact {
 
+	private Logger logger = LoggerFactory.getLogger(getClass());
+	
 	private static final class ClusterMemberImpl implements ClusterMember {
 		private final InetSocketAddress address;
 
@@ -53,9 +58,10 @@ public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration
 	}
 
 	private HazelcastInstance getClient() {
-		if (client == null) {
+		// if the client exists but no longer running, make sure we reinstantiate it
+		if (client == null || !client.getLifecycleService().isRunning()) {
 			synchronized(this) {
-				if (client == null) {
+				if (client == null || !client.getLifecycleService().isRunning()) {
 					ClientConfig config = new ClientConfig();
 					// 3.10.2
 //					ClientAwsConfig awsConfig = new ClientAwsConfig();
@@ -82,9 +88,14 @@ public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration
 	@Override
 	public List<ClusterMember> getMembers() {
 		List<ClusterMember> members = new ArrayList<ClusterMember>();
-		for (Member member : getClient().getCluster().getMembers()) {
-			final InetSocketAddress address = getAddress(member);
-			members.add(new ClusterMemberImpl(address));
+		try {
+			for (Member member : getClient().getCluster().getMembers()) {
+				final InetSocketAddress address = getAddress(member);
+				members.add(new ClusterMemberImpl(address));
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Could not get cluster members", e);
 		}
 		return members;
 	}
