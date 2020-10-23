@@ -27,7 +27,7 @@ public class HazelcastClusterGUIManager extends BaseJAXBGUIManager<HazelcastClus
 
 	@Override
 	public String getCategory() {
-		return "Networking";
+		return "Environments";
 	}
 	
 }
