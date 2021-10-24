@@ -1,0 +1,57 @@
+result = xml.objectify(file.read("hazelcast-cluster.xml"))
+
+tag("Hazelcast Cluster")
+
+result/port = parameter(
+	name: "port",
+	category: "Basic",
+	title: null,
+	description: "The port that you want to expose",
+	type: "long",
+	encrypted: false,
+	optional: true,
+	default: "80",
+	raw: result/port)/current
+	
+result/hazelcastPort = parameter(
+	name: "hazelcastPort",
+	category: "Basic",
+	title: null,
+	description: "The hazelcast clustering port that you want to use",
+	type: "long",
+	encrypted: false,
+	optional: true,
+	default: "5701",
+	raw: result/hazelcastPort)/current
+
+result/amazonTagKey = parameter(
+	name: "amazonTagKey",
+	category: "Amazon",
+	title: null,
+	description: "The tag key that should be used",
+	type: null,
+	encrypted: false,
+	optional: true,
+	raw: result/amazonTagKey)/current
+	
+result/amazonTagValue = parameter(
+	name: "amazonTagValue",
+	category: "Amazon",
+	title: null,
+	description: "The tag value that should be used",
+	type: null,
+	encrypted: false,
+	optional: true,
+	raw: result/amazonTagValue)/current
+	
+result/amazonRegion = parameter(
+	name: "amazonRegion",
+	category: "Amazon",
+	title: null,
+	description: "The region that should be used",
+	type: null,
+	encrypted: false,
+	optional: true,
+	raw: result/amazonRegion)/current
+	
+file.write("hazelcast-cluster.xml", xml.stringify(result))
