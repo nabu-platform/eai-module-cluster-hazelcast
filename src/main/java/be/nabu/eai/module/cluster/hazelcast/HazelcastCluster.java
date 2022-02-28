@@ -3,6 +3,7 @@ package be.nabu.eai.module.cluster.hazelcast;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,12 @@ import be.nabu.libs.resources.api.ResourceContainer;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
+// hazelcast 4.2.4
+//import com.hazelcast.cluster.Member;
+//import com.hazelcast.cluster.MembershipEvent;
+//import com.hazelcast.cluster.MembershipListener;
 import com.hazelcast.core.HazelcastInstance;
+// hazelcast 3.12
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
@@ -106,11 +112,15 @@ public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration
 
 	@Override
 	public ClusterMemberSubscription addMembershipListener(final ClusterMemberSubscriber subscriber) {
+		// in 3.12 this returned a string
+//		final String subscriptionId = getClient().getCluster().addMembershipListener(new MembershipListener() {
 		final String subscriptionId = getClient().getCluster().addMembershipListener(new MembershipListener() {
 			@Override
 			public void memberRemoved(MembershipEvent arg0) {
 				subscriber.memberRemoved(new ClusterMemberImpl(arg0.getMember().getSocketAddress()));
 			}
+			// available in 3.12
+			// no longer available in 4.2.4
 			@Override
 			public void memberAttributeChanged(MemberAttributeEvent arg0) {
 				// do nothing
