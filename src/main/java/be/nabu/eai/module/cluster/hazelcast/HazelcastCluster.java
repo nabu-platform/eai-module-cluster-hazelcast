@@ -2,7 +2,9 @@ package be.nabu.eai.module.cluster.hazelcast;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -91,8 +93,7 @@ public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration
 		return client;
 	}
 	
-	@Override
-	public List<ClusterMember> getMembers() {
+	public List<ClusterMember> getLatestMembers() {
 		List<ClusterMember> members = new ArrayList<ClusterMember>();
 		try {
 			for (Member member : getClient().getCluster().getMembers()) {
@@ -104,6 +105,50 @@ public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration
 			logger.warn("Could not get cluster members", e);
 		}
 		return members;
+	}
+	
+	private Map<String, ClusterMember> cachedMembers = null;
+	
+	@Override
+	public List<ClusterMember> getMembers() {
+		if (cachedMembers == null) {
+			synchronized(this) {
+				if (cachedMembers == null) {
+					Map<String, ClusterMember> calculateCached = new HashMap<String, ClusterMember>();
+					// load initial members
+					for (ClusterMember member : getLatestMembers()) {
+						calculateCached.put(member.getAddress().toString(), member);
+					}
+					this.cachedMembers = calculateCached;
+					// listen to events
+					addMembershipListener(new ClusterMemberSubscriber() {
+						@Override
+						public void memberRemoved(ClusterMember member) {
+							synchronized(cachedMembers) {
+								cachedMembers.remove(member.getAddress().toString());
+							}
+						}
+						@Override
+						public void memberAdded(ClusterMember member) {
+							synchronized(cachedMembers) {
+								cachedMembers.put(member.getAddress().toString(), member);
+							}
+						}
+					});
+				}
+			}
+		}
+		// if we have no members yet (or anymore), keep adding the latest
+		if (cachedMembers.isEmpty()) {
+			synchronized(cachedMembers) {
+				if (cachedMembers.isEmpty()) {
+					for (ClusterMember member : getLatestMembers()) {
+						cachedMembers.put(member.getAddress().toString(), member);
+					}
+				}
+			}
+		}
+		return new ArrayList<ClusterMember>(cachedMembers.values());
 	}
 
 	private InetSocketAddress getAddress(Member member) {
@@ -137,5 +182,6 @@ public class HazelcastCluster extends JAXBArtifact<HazelcastClusterConfiguration
 			}
 		};
 	}
+
 
 }
